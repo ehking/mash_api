@@ -62,12 +62,12 @@ class api
 
     public function  get_all_form(){
         // where IsFinalized=1
-       $q=$this->oa_conn->prepare('SELECT z3.RowID
+       $q=$this->oa_conn->prepare('SELECT z3.*
             FROM zfd_formdata_3_versions z3 
             inner join fd_forms f3 ON (f3.FormDataVerID = z3.RowID AND f3.TemplateID = 3) 
             inner join dm_form_docs df3 ON (df3.FormID = f3.RowID) 
             inner join dm_doc_versions dv3 ON (dv3.RowID = df3.DocVersionID )
-            ORDER BY z3.RowID DESC LIMIT 1');
+          where abs(TIMESTAMPDIFF(SECOND,dv3.CreateDate,NOW())) < 300');
             $q->execute();
             $q->setFetchMode(PDO::FETCH_ASSOC);
             return $q->fetchAll();
@@ -85,6 +85,7 @@ class api
                 return "insert";
             }
     }
+
     public  function create_category($row){
         $cat=array();
         if (!is_null($row['field12'])){
@@ -109,6 +110,20 @@ class api
             $cat=1;
         }
         return $cat;
+    }
+    public  function  convert_id_cat($id_cat){
+        switch ($id_cat){
+            case 1:
+                 return 48;
+            case  2:
+                return 28;
+            case  3:
+                return 34;
+            case 4:
+                return 13;
+            case 5:
+                return 12;
+        }
     }
 
     public  function  create_tag($row){
