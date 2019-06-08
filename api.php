@@ -69,7 +69,11 @@ class api
           where abs(TIMESTAMPDIFF(SECOND,dv3.CreateDate,NOW())) < 300');
             $q->execute();
             $q->setFetchMode(PDO::FETCH_ASSOC);
-            return $q->fetchAll();
+            if ($q->rowCount() >0 ){
+                return $q->fetchAll();
+            }else{
+                return false;
+            }
     }
 
     public  function  checked_row($row){
@@ -284,17 +288,18 @@ class api
             $i++;
         }
     }
+
     public  function  upload_file_voice(){
 
     }
+
     public  function  upload_file_img_post($row){
         $q = $this->oa_conn->prepare('SELECT z4.*
                 FROM zfd_formdata_4_versions z4 
                 inner join fd_forms f3 ON (f3.FormDataVerID = z4.RowID AND f3.TemplateID = 4) 
                 inner join dm_form_docs df3 ON (df3.FormID = f3.RowID) 
                 inner join dm_doc_versions dv3 ON (dv3.RowID = df3.DocVersionID )
-               
-inner join zfd_formdata_3_versions z3 ON (z4.field1=z3.rowid)
+                inner join zfd_formdata_3_versions z3 ON (z4.field1=z3.rowid)
                 where z3.rowid=? order by z4.RowID DESC limit 1
  
                   ');
@@ -345,6 +350,7 @@ inner join zfd_formdata_3_versions z3 ON (z4.field1=z3.rowid)
 
         return $img_post;
     }
+
     public  function  upload_file_img_ga($row)
     {
         $q = $this->oa_conn->prepare('SELECT re25.*
@@ -353,7 +359,7 @@ inner join zfd_formdata_3_versions z3 ON (z4.field1=z3.rowid)
                 inner join dm_form_docs df3 ON (df3.FormID = f3.RowID) 
                 inner join dm_doc_versions dv3 ON (dv3.RowID = df3.DocVersionID )
                 inner join zfd_repeating_25_versions re25 ON (re25.FormID=f3.rowid)
-inner join zfd_formdata_3_versions z3 ON (z4.field1=z3.rowid)
+                inner join zfd_formdata_3_versions z3 ON (z4.field1=z3.rowid)
                 where z3.rowid=? 
                   ');
         $q->execute([$row]);
@@ -401,9 +407,40 @@ inner join zfd_formdata_3_versions z3 ON (z4.field1=z3.rowid)
                 }
 
             }
-        }
+        }else
+            $img="";
+
+        return $img;
     }
 
+    public  function  update_post($postid,$row,$cat,$tag,$img_post){
+        $data = array(
+            'title' => $row['field1'] ,
+            'slug'=>$row['field1'] ,
+            'status'=>"publish",
+            'content'=>$row['field5'],
+            'author'=>1,
+            'comment_status'=>"open",
+            'tags'=>$tag,
+            'categories'=>$cat,
+            'featured_media'=>$img_post,
+        );
+        $request = Requests::post($this->url.'/mashahir/'.$postid,$this->headers,$data,$this->options);
+        $j=json_decode($request->body,true);
+    }
+
+    public  function  get_post_id($row){
+        $q=$this->conn->prepare('select * from wp_postmeta 
+            where meta_key="rowid" and meta_value=?');
+        $q->execute([$row['rowid']]);
+        $q->setFetchMode(PDO::FETCH_ASSOC);
+        if ($q->rowCount() > 0){
+            $res=$q->fetchAll();
+            return $res[0]['post_id'];
+        }else{
+            return false;
+        }
+    }
     function Decode($content)
     {
         $decodeContent = '';
